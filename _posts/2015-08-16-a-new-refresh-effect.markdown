@@ -114,7 +114,7 @@ Bad
 ```
   
 
-####消息提醒窗口
+#### 消息提醒窗口
 
 下面就是我们这次开发的核心阶段，根据我们从网易新闻下拉控件观察到动画效果，我归纳出几个要点。
 
@@ -123,7 +123,7 @@ Bad
 3. refreshControl具有两段收起动画已配合弹窗出口展示
 4. 在弹窗展示过程中，如果用户对相应scrollView进行手势操作，暂停弹窗展示动画进程。当用户手离开scrollView时，动画继续
 
-######1.弹窗内容参数化
+###### 1.弹窗内容参数化
 
 根据RefreshControl的特性，我们可以通过注册一个RefreshNewsView作为自定义弹窗视图，并设置相应的属性定义启用。
 
@@ -138,4 +138,103 @@ Bad
     _refreshControl.bottomEnabled = YES;
 ```
 
-######2.弹窗内容具有bounds效果
+###### 2.弹窗内容具有bounce效果
+
+为了使消息窗口弹出动画具有bounce效果，需要两端动画实现，这里使用了参数化设置，方便嵌套调用.
+
+``` objc
+- (void)animationWithView:(UILabel *)view
+                    Scale:(CGFloat)scale
+                    Alpha:(CGFloat)alpha
+                     Stop:(BOOL)stop
+{
+    view.alpha = alpha;
+    view.layer.anchorPoint = CGPointMake(0.5, 0.5);
+    
+    [UIView animateWithDuration:0.25
+                          delay:0
+                        options:UIViewAnimationOptionCurveEaseIn
+                     animations:^{
+                         
+                         view.transform = CGAffineTransformMakeScale(scale, scale);
+                         view.alpha = 1;
+                         
+                     } completion:^(BOOL finished) {
+                         
+                         if (!stop && finished) {
+                             [self animationWithView:view
+                                               Scale:1/scale
+                                               Alpha:1
+                                                Stop:YES];
+                         }
+                     }];
+    
+}
+```
+##### 3. refreshControl具有两段收起动画已配合弹窗出口展示
+
+通过UIViewAnimation的block方法的嵌套使用，实现多段的动画展示
+
+``` objc
+[UIView animateWithDuration:0.2 animations:^{
+        
+        UIEdgeInsets tmpInsets;
+        if ([self isShowNewsEnableDirection:RefreshDirectionTop]) {
+            tmpInsets = _sysDefaultInsetOfScroller;
+            tmpInsets.top = _sysDefaultInsetOfScroller.top + self.enableRefreshHeight;
+        }else{
+            tmpInsets = _sysDefaultInsetOfScroller;
+        }
+        _scrollView.contentInset = tmpInsets;
+        
+        [self.topView performSelector:@selector(finishRefreshing)];
+        
+    } completion:^(BOOL finished) {
+        
+        if ([self isShowNewsEnableDirection:RefreshDirectionTop])
+        {
+            self.topView.hidden = YES;
+            [self.refreshNewsView performSelector:@selector(showWithString:)
+                                       withObject:self.newsString];
+        }
+        
+        if ([self isShowNewsEnableDirection:RefreshDirectionTop]) {
+            [UIView animateWithDuration:0.2
+                                  delay:1.5
+                                options:UIViewAnimationOptionAllowUserInteraction
+                             animations:^{
+                                 _scrollView.contentInset = _sysDefaultInsetOfScroller;
+                             } completion:^(BOOL finished) {
+                                 [self.refreshNewsView performSelector:@selector(dismiss)];
+                                 self.topView.hidden = NO;
+                                 self.newsString = nil;
+                                 _refreshingDirection = RefreshingDirectionNone;
+                             }];
+        }else{
+            _refreshingDirection = RefreshingDirectionNone;
+        }
+    }];
+```
+
+##### 4. 在弹窗展示过程中，如果用户对相应scrollView进行手势操作，暂停弹窗展示动画进程。当用户手离开scrollView时，动画继续
+
+通过[苹果文档](https://developer.apple.com/library/content/qa/qa1673/)我们可以了解到，动画是可以在过程中停止可继续的，引起，我们就需要在用户开始滚动时停止我们的弹窗动画，离开时继续。
+
+``` objc
+    if (self.topEnabled && self.topView.hidden == YES && self.scrollView.isTracking && !self.isAnimationStop) {
+        
+        [self pasueAnimation:self.scrollView];
+        
+    }else if(self.topEnabled && self.topView.hidden == YES && self.scrollView.isDecelerating && self.isAnimationStop){
+        
+        [self resumeAnimation:self.scrollView];
+    }
+```
+***
+
+**到此，我们的基本问题到已经结束了，但是这个控件后续优化的控件还很大，这个只是第一版，后面我还会持续更新扩展。**
+
+Demo：[GitHub](https://github.com/handmuch/RefreshControl_News)
+
+
+
