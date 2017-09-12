@@ -216,7 +216,7 @@ Bad
     }];
 ```
 
-##### 4. 在弹窗展示过程中，如果用户对相应scrollView进行手势操作，暂停弹窗展示动画进程。当用户手离开scrollView时，动画继续
+##### 4. 当对scrollView进行操作，动画暂停。当操作停止scrollView时，动画继续
 
 通过[苹果文档](https://developer.apple.com/library/content/qa/qa1673/)我们可以了解到，动画是可以在过程中停止可继续的，引起，我们就需要在用户开始滚动时停止我们的弹窗动画，离开时继续。
 
