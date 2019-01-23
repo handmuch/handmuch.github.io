@@ -1,7 +1,7 @@
 ---
 layout:     post
-title:      " OpenGLES入门学习1-GLKit "
-subtitle:   "Make a refresh effect like NetEase News"
+title:      " OpenGLES入门学习1- GLKit "
+subtitle:   " Learn OpenGLES Step1 - GLKit "
 date:       2017-03-01 12:00:00
 author:     "PeterKwok"
 header-img: "img/home-bg-o.jpg"
